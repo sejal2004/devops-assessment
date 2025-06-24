@@ -1,0 +1,16 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: kubectl-deploy
+spec:
+  params:
+    - name: manifests
+      type: string
+  workspaces:
+    - name: kubeconfig
+  steps:
+    - name: apply
+      image: bitnami/kubectl
+      script: |
+        export KUBECONFIG=$(workspaces.kubeconfig.path)/config
+        kubectl apply -f $(params.manifests)

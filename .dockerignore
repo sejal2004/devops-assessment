@@ -1,0 +1,22 @@
+# Ignore Git metadata
+.git
+.gitignore
+
+# Logs & temp files
+log/*
+tmp/*
+!/tmp/.keep       # keep empty dir if you rely on it
+
+# Node modules / JS build artifacts
+node_modules
+yarn.lock
+package-lock.json
+
+# OS & editor noise
+*.swp
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+coverage
+spec/tmp

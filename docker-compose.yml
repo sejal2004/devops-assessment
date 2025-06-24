@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:13.14-alpine      # pin minor tag for repeatability
+    environment:
+      POSTGRES_USER:  myuser
+      POSTGRES_PASSWORD: mypass
+      POSTGRES_DB:  mydb
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:                      # ⇢ “service_healthy” gate for web
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+
+  web:
+    build: .
+    command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails db:prepare && rails server -b 0.0.0.0"
+    environment:
+      RAILS_ENV: development
+      DATABASE_URL: postgres://myuser:mypass@db:5432/mydb
+    volumes:
+      - .:/app                        # live-code reload in dev
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy    # ← wait until pg_isready passes
+
+volumes:
+  pgdata: {}

@@ -1,0 +1,69 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: ci-cd-pipeline
+spec:
+  params:
+    - name: git-url
+      type: string
+    - name: git-revision
+      type: string
+    - name: image
+      type: string
+    - name: manifest-path
+      type: string
+  workspaces:
+    - name: source
+    - name: kubeconfig
+  tasks:
+    - name: clone
+      taskRef:
+        name: git-clone
+        kind: Task
+      params:
+        - name: url
+          value: $(params.git-url)
+        - name: revision
+          value: $(params.git-revision)
+      workspaces:
+        - name: source
+          workspace: source
+
+    - name: debug-list-files
+      image: alpine
+      script: |
+        echo "===== Listing contents of /workspace/source ====="
+        ls -al /workspace/source
+        echo "===== End of listing ====="
+      workspaces:
+        - name: source
+          workspace: source
+      runAfter:
+        - clone
+
+    - name: build
+      taskRef:
+        name: kaniko-build
+        kind: Task
+      params:
+        - name: IMAGE
+          value: $(params.image)
+      workspaces:
+        - name: source
+          workspace: source
+      runAfter:
+        - debug-list-files
+
+    - name: deploy
+      taskRef:
+        name: kubectl-deploy
+        kind: Task
+      params:
+        - name: manifests
+          value: $(params.manifest-path)
+      workspaces:
+        - name: kubeconfig
+          workspace: kubeconfig
+      runAfter:
+        - build
+

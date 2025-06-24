@@ -1,0 +1,34 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: ci-cd-pipeline-run
+spec:
+  pipelineRef:
+    name: ci-cd-pipeline
+
+  # Bind your workspaces
+  workspaces:
+    - name: source
+      emptyDir: {}
+    - name: kubeconfig
+      secret:
+        secretName: kubeconfig
+
+  # Supply every param the pipeline declares
+  params:
+    - name: git-url
+      value: https://github.com/sejal2004/devops-assessment.git
+    - name: git-revision
+      value: main
+    - name: image
+      value: docker.io/sejal2004/devops-assessment:latest
+    - name: manifest-path
+      value: ./k8s
+
+  # Set the SA for all TaskRuns
+  taskRunTemplate:
+    serviceAccountName: tekton-bot
+
+  # Timeout block in v1
+  timeouts:
+    pipeline: 30m0s

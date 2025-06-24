@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: budget
+  labels: { app: postgres }
+spec:
+  clusterIP: None
+  ports:
+    - port: 5432
+      name: pg
+  selector: { app: postgres }
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: budget
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector: { matchLabels: { app: postgres } }
+  template:
+    metadata: { labels: { app: postgres } }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:13.14-alpine
+          ports: [ { containerPort: 5432, name: pg } ]
+          envFrom: [ { secretRef: { name: postgres-secret } } ]
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec: { command: ["pg_isready","-U","$(POSTGRES_USER)"] }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources: { requests: { storage: 1Gi } }
